@@ -2,24 +2,24 @@
 
 `oc new-project nexus`
 
-** Run from within workspace/openshift/cicdi
+Run from within workspace/openshift/cicdi
 
 `oc process -f nexus-template.yaml | oc create -f -`
 
-** Click link, login with admin:admin123, click repositories
+Click link, login with admin:admin123, click repositories
 
-** Add spring-release repo to nexus
+Add spring-release repo to nexus
 
-Repository ID: spring-milestone
+```Repository ID: spring-milestone
 Repository Name: spring-milestone
 Repository Type: proxy
 Repository Policy: Release
 Repository Format: maven2
 Contained in groups:
 
-Remote URL: https://repo.spring.io/libs-release/
+Remote URL: https://repo.spring.io/libs-release/```
 
-** Take note of public repo in nexus
+Take note of public repo in nexus
 
 2. Create App Environment
 
@@ -37,14 +37,15 @@ strategy:
       - name: MAVEN_MIRROR_URL
         value: http://nexus-cicd.rhel-cdk.10.1.2.2.xip.io/content/groups/public/
 
-** Above url needs to match the public repo in nexus
+Above url needs to match the public repo in nexus
 
 // If using a private repo
 //oc new-app fabric8/s2i-java~https://gitlab.consulting.redhat.com/dbove/springboot-sample-app.git
 
 5. Add basic secret into build config (If using a private git repo)
-** Will be using applicationId/password
-** https://docs.openshift.com/enterprise/3.2/dev_guide/builds.html#using-private-repositories-for-builds
+
+Will be using applicationId/password
+https://docs.openshift.com/enterprise/3.2/dev_guide/builds.html#using-private-repositories-for-builds
 
 `oc secrets new-basicauth basicsecret --username=USERNAME --password=PASSWORD`
 
@@ -54,7 +55,7 @@ strategy:
 
 `oc edit bc/springboot-sample-app`
 
-*add in
+Add in
 source:
     git:
       uri: "https://github.com/user/app.git"
