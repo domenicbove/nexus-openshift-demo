@@ -15,6 +15,59 @@ message: The CI/CD infrastructure composed of Jenkins and Nexus Repository servi
 objects:
 # Sonatype Nexus
 - apiVersion: v1
+  kind: ImageStream
+  metadata:
+    labels:
+      app: nexus
+    name: sonartype-nexus-base
+  spec:
+    tags:
+    - annotations:
+        description: The SonarType's Base Nexus Docker image
+      from:
+        kind: DockerImage
+        name: sonatype/nexus:2.13.0-01
+      importPolicy: {}
+- apiVersion: v1
+kind: BuildConfig
+metadata:
+  labels:
+    app: nexus
+  name: nexus
+spec:
+  output:
+    to:
+      kind: ImageStreamTag
+      name: nexus:latest
+  postCommit: {}
+  resources: {}
+  runPolicy: Serial
+  source:
+    git:
+      ref: master
+      uri: https://github.com/domenicbove/nexus-openshift-demo
+    type: Git
+    contextDir: nexus
+  strategy:
+    dockerStrategy:
+      from:
+        kind: ImageStreamTag
+        name: sonartype-nexus-base:latest
+    type: Docker
+  triggers:
+  - github:
+      secret: 1802aa5420b11b2c
+    type: GitHub
+  - imageChange: {}
+    type: ImageChange
+status:
+  lastVersion: 0
+- apiVersion: v1
+  kind: ImageStream
+  metadata:
+    name: nexus
+  spec: {}
+- apiVersion: v1
   kind: Service
   metadata:
     annotations:
@@ -45,22 +98,6 @@ objects:
     to:
       kind: Service
       name: nexus
-- apiVersion: v1
-  kind: ImageStream
-  metadata:
-    labels:
-      app: nexus
-    name: nexus
-  spec:
-    tags:
-    - annotations:
-        description: The Nexus Docker image
-        tags: nexus
-      from:
-        kind: DockerImage
-        name: openshiftdemos/nexus:2.13.0-01
-      importPolicy: {}
-      name: "2.13.0-01"
 - apiVersion: v1
   kind: DeploymentConfig
   metadata:
@@ -126,6 +163,6 @@ objects:
         - nexus
         from:
           kind: ImageStreamTag
-          name: nexus:2.13.0-01
+          name: nexus:latest
       type: ImageChange
   status: {}
