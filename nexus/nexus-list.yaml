@@ -1,24 +1,12 @@
 apiVersion: v1
-kind: Template
-metadata:
-  name: cicd
-labels:
-  template: cicd
-  group: cicd
-metadata:
-  annotations:
-    description: Creates the CI/CD infrastructure with Jenins and Nexus
-    iconClass: icon-jenkins
-    tags: instant-app,jenkins,nexus,cicd
-  name: cicd
-message: The CI/CD infrastructure composed of Jenkins and Nexus Repository services has been created in your project.  Jenkins username/password are admin/${JENKINS_PASSWORD}.  The tutorial at https://github.com/OpenShiftDemos/openshift-cd-demo/tree/openshift-3.3 contains more information about using this CI/CD demo.
-objects:
-# Sonatype Nexus
+items:
 - apiVersion: v1
   kind: ImageStream
   metadata:
     labels:
       app: nexus
+      group: cicd
+      template: cicd
     name: sonartype-nexus-base
   spec:
     tags:
@@ -26,47 +14,56 @@ objects:
         description: The SonarType's Base Nexus Docker image
       from:
         kind: DockerImage
-        name: sonatype/nexus:2.13.0-01
+        name: sonatype/nexus3:latest
       importPolicy: {}
+      name: "latest"
 - apiVersion: v1
-kind: BuildConfig
-metadata:
-  labels:
-    app: nexus
-  name: nexus
-spec:
-  output:
-    to:
-      kind: ImageStreamTag
-      name: nexus:latest
-  postCommit: {}
-  resources: {}
-  runPolicy: Serial
-  source:
-    git:
-      ref: master
-      uri: https://github.com/domenicbove/nexus-openshift-demo
-    type: Git
-    contextDir: nexus
-  strategy:
-    dockerStrategy:
-      from:
+  kind: BuildConfig
+  metadata:
+    labels:
+      app: nexus
+      group: cicd
+      template: cicd
+    name: nexus
+  spec:
+    output:
+      to:
         kind: ImageStreamTag
-        name: sonartype-nexus-base:latest
-    type: Docker
-  triggers:
-  - github:
-      secret: 1802aa5420b11b2c
-    type: GitHub
-  - imageChange: {}
-    type: ImageChange
-status:
-  lastVersion: 0
+        name: nexus:latest
+    postCommit: {}
+    resources: {}
+    runPolicy: Serial
+    source:
+      contextDir: nexus
+      git:
+        ref: master
+        uri: https://github.com/domenicbove/nexus-openshift-demo
+      type: Git
+    strategy:
+      dockerStrategy:
+        from:
+          kind: ImageStreamTag
+          name: sonartype-nexus-base:latest
+      type: Docker
+    triggers:
+    - github:
+        secret: 1802aa5420b11b2c
+      type: GitHub
+    - imageChange: {}
+      type: ImageChange
+  status:
+    lastVersion: 0
 - apiVersion: v1
   kind: ImageStream
   metadata:
+    labels:
+      app: nexus
+      group: cicd
+      template: cicd
     name: nexus
   spec: {}
+  status:
+    dockerImageRepository: ""
 - apiVersion: v1
   kind: Service
   metadata:
@@ -74,6 +71,8 @@ status:
       description: Sonatype Nexus repository manager's http port
     labels:
       app: nexus
+      group: cicd
+      template: cicd
     name: nexus
   spec:
     ports:
@@ -91,6 +90,8 @@ status:
   metadata:
     labels:
       app: nexus
+      group: cicd
+      template: cicd
     name: nexus
   spec:
     port:
@@ -103,6 +104,8 @@ status:
   metadata:
     labels:
       app: nexus
+      group: cicd
+      template: cicd
     name: nexus
   spec:
     replicas: 1
@@ -120,27 +123,27 @@ status:
         containers:
         - image: ' '
           imagePullPolicy: Always
+          livenessProbe:
+            failureThreshold: 5
+            httpGet:
+              path: /content/groups/public
+              port: 8081
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
           name: nexus
           ports:
           - containerPort: 8081
             protocol: TCP
-          livenessProbe:
-            failureThreshold: 5
-            initialDelaySeconds: 60
-            periodSeconds: 10
-            successThreshold: 1
-            httpGet:
-              port: 8081
-              path: /content/groups/public
-            timeoutSeconds: 5
           readinessProbe:
             failureThreshold: 5
+            httpGet:
+              path: /content/groups/public
+              port: 8081
             initialDelaySeconds: 60
             periodSeconds: 10
             successThreshold: 1
-            httpGet:
-              port: 8081
-              path: /content/groups/public
             timeoutSeconds: 5
           resources:
             limits:
@@ -166,3 +169,5 @@ status:
           name: nexus:latest
       type: ImageChange
   status: {}
+kind: List
+metadata: {}
